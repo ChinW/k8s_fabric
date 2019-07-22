@@ -1,0 +1,106 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.yml convert
+    kompose.version: 1.18.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: peer0-org1-example-com
+  name: peer0-org1-example-com
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: peer0-org1-example-com
+    spec:
+      hostAliases:
+        - ip: '127.0.0.1'
+          hostnames:
+            - 'peer0.org1.example.com'
+        - ip: '172.17.0.4'
+          hostnames:
+            - 'ca.org1.example.com'
+        - ip: '172.17.0.7'
+          hostnames:
+            - 'orderer.example.com'
+        - ip: '172.17.0.10'
+          hostnames:
+            - 'couchdb'
+      containers:
+        - args:
+            # - HOSTNAME
+            - peer
+            - node
+            - start
+          env:
+            - name: CORE_CHAINCODE_LOGGING_LEVEL
+              value: DEBUG
+            - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
+              value: couchdb:5984
+            - name: CORE_LEDGER_STATE_STATEDATABASE
+              value: CouchDB
+            - name: CORE_LOGGING_LEVEL
+              value: debug
+            - name: CORE_PEER_NETWORKID
+              value: nid1
+            - name: CORE_PEER_ADDRESS
+              value: peer0.org1.example.com:7051
+            # - name: CORE_PEER_GOSSIP_BOOTSTRAP
+            #   value: 'peer0.org1.example.com:7051'
+            # - name: CORE_PEER_LISTENADDRESS
+            #   value: 'peer0.org1.example.com:7051'
+            # - name: CORE_PEER_CHAINCODELISTENADDRESS
+            #   value: 'peer0.org1.example.com:7052'
+            # - name: CORE_PEER_EVENTS_ADDRESS
+            #   value: 'peer0.org1.example.com:7053'
+            - name: CORE_PEER_ID
+              value: peer0.org1.example.com
+            - name: CORE_PEER_LOCALMSPID
+              value: Org1MSP
+            - name: CORE_PEER_MSPCONFIGPATH
+              value: /etc/hyperledger/peer/msp
+            - name: CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE
+              value: bridge
+            - name: CORE_VM_ENDPOINT
+              value: unix:///host/var/run/docker.sock
+            - name: CORE_CHAINCODE_DEPLOYTIMEOUT
+              value: 60s
+            - name: CORE_CHAINCODE_STARTUPTIMEOUT
+              value: 60s
+          image: hyperledger/fabric-peer:1.2.1
+          name: peer0-org1-example-com
+          ports:
+            - containerPort: 7051
+            - containerPort: 7052
+            - containerPort: 7053
+          resources: {}
+          volumeMounts:
+            - mountPath: /host/var/run/
+              name: peer0-org1-example-com-claim0
+            - mountPath: /etc/hyperledger/configtx
+              name: peer0-org1-example-com-claim1
+            - mountPath: /etc/hyperledger/peer/msp
+              name: peer0-org1-example-com-claim2
+            - mountPath: /etc/hyperledger/msp/users
+              name: peer0-org1-example-com-claim3
+          workingDir: /opt/gopath/src/github.com/hyperledger/fabric
+      restartPolicy: Always
+      volumes:
+        - name: peer0-org1-example-com-claim0
+          hostPath:
+            path: /var/run/
+        - name: peer0-org1-example-com-claim1
+          hostPath:
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer
+        - name: peer0-org1-example-com-claim2
+          hostPath:
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp
+        - name: peer0-org1-example-com-claim3
+          hostPath:
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1.example.com/users
+status: {}

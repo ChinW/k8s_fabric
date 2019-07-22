@@ -1,0 +1,150 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.yml convert
+    kompose.version: 1.18.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: peer0-org1-example-com
+  name: peer0-org1-example-com
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: peer0-org1-example-com
+    spec:
+      hostAliases:
+        - ip: '127.0.0.1'
+          hostnames:
+            - 'peer0.org1.example.com'
+        - ip: '172.17.0.7'
+          hostnames:
+            - 'ca.org1.example.com'
+        - ip: '172.17.0.8'
+          hostnames:
+            - 'orderer.example.com'
+        - ip: '172.17.0.4'
+          hostnames:
+            - 'couchdb'
+      containers:
+        # - name: couchdb
+        #   image: hyperledger/fabric-couchdb:0.4.10
+        #   env:
+        #     - name: COUCHDB_USER
+        #       value: ''
+        #     - name: COUCHDB_PASSWORD
+        #       value: ''
+        #   ports:
+        #     - containerPort: 5984
+        #   volumeMounts:
+        #     - mountPath: /opt/couchdb/data
+        #       name: peerdata
+        #       subPath: peer1/couchdb
+        - name: peer1-org1
+          image: hyperledger/fabric-peer:1.4.0
+          env:
+            - name: CORE_LEDGER_STATE_STATEDATABASE
+              value: CouchDB
+            - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
+              value: couchdb:5984
+            - name: CORE_VM_ENDPOINT
+              value: 'unix:///host/var/run/docker.sock'
+            - name: FABRIC_LOGGING_SPEC
+              value: 'DEBUG'
+            - name: CORE_PEER_TLS_ENABLED
+              value: 'false'
+            - name: CORE_PEER_GOSSIP_USELEADERELECTION
+              value: 'true'
+            - name: CORE_PEER_GOSSIP_ORGLEADER
+              value: 'false'
+            - name: CORE_PEER_PROFILE_ENABLED
+              value: 'true'
+            - name: CORE_PEER_TLS_CERT_FILE
+              value: '/etc/hyperledger/fabric/tls/server.crt'
+            - name: CORE_PEER_TLS_KEY_FILE
+              value: '/etc/hyperledger/fabric/tls/server.key'
+            - name: CORE_PEER_TLS_ROOTCERT_FILE
+              value: '/etc/hyperledger/fabric/tls/ca.crt'
+            - name: CORE_PEER_ADDRESSAUTODETECT
+              value: 'true'
+            - name: CORE_PEER_CHAINCODELISTENADDRESS
+              value: '0.0.0.0:7052'
+            - name: CORE_PEER_ID
+              value: peer1.org1
+            - name: CORE_PEER_ADDRESS
+              value: peer0.org1.example.com:7051
+            - name: CORE_PEER_GOSSIP_BOOTSTRAP
+              value: peer0.org1.example.com:7051
+            - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+              value: peer0.org1.example.com:7051
+            - name: CORE_PEER_LOCALMSPID
+              value: Org1MSP
+            - name: CORE_PEER_MSPCONFIGPATH
+              value: /etc/hyperledger/peer/msp
+          ports:
+            - containerPort: 7051
+            - containerPort: 7052
+            - containerPort: 7053
+          command: ['peer']
+          args: ['node', 'start']
+          volumeMounts:
+            - mountPath: /host/var/run/
+              name: peer0-org1-example-com-claim0
+            - mountPath: /etc/hyperledger/configtx
+              name: peer0-org1-example-com-claim1
+            - mountPath: /etc/hyperledger/peer/msp
+              name: peer0-org1-example-com-claim2
+            - mountPath: /etc/hyperledger/msp/users
+              name: peer0-org1-example-com-claim3
+          workingDir: /opt/gopath/src/github.com/hyperledger/fabric
+      volumes:
+        - name: peer0-org1-example-com-claim0
+          hostPath:
+            path: /var/run/
+        - name: peer0-org1-example-com-claim1
+          hostPath:
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer
+        - name: peer0-org1-example-com-claim2
+          hostPath:
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp
+        - name: peer0-org1-example-com-claim3
+          hostPath:
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1.example.com/users
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose -f docker-compose.yml convert
+    kompose.version: 1.18.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: peer0-org1-example-com
+  name: peer0-org1-example-com
+spec:
+  selector:
+    io.kompose.service: peer0-org1-example-com
+  type: NodePort
+  ports:
+    - name: externale-listen-endpoint
+      protocol: TCP
+      port: 7051
+      targetPort: 7051
+      nodePort: 30004
+
+    - name: chaincode-listen
+      protocol: TCP
+      port: 7052
+      targetPort: 7052
+      nodePort: 30009
+
+    - name: event-listen
+      protocol: TCP
+      port: 7053
+      targetPort: 7053
+      nodePort: 30006
