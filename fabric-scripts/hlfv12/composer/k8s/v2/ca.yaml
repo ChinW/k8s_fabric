@@ -8,6 +8,7 @@ metadata:
   labels:
     io.kompose.service: ca-org1-example-com
   name: ca-org1-example-com
+  namespace: org1
 spec:
   replicas: 1
   strategy:
@@ -18,30 +19,22 @@ spec:
       labels:
         io.kompose.service: ca-org1-example-com
     spec:
-      hostAliases:
-        - ip: '127.0.0.1'
-          hostnames:
-            - 'ca.org1.example.com'
-        # - ip: '172.17.0.12'
-        #   hostnames:
-        #     - 'orderer.example.com'
-        - ip: '172.17.0.4'
-          hostnames:
-            - 'couchdb'
       containers:
         - args:
             # - sleep
             # - '3600'
             - sh
             - -c
-            - fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
-              --ca.keyfile /etc/hyperledger/fabric-ca-server-config/19ab65abbb04807dad12e4c0a9aaa6649e70868e3abd0217a322d89e47e1a6ae_sk
+            - fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.org1-cert.pem
+              --ca.keyfile /etc/hyperledger/fabric-ca-server-config/bd166265e28ac66b81e564aacd88657a538ef74d8b0b7856319b6ae32c89ca47_sk
               -b admin:adminpw -d
           env:
             - name: FABRIC_CA_HOME
               value: /etc/hyperledger/fabric-ca-server
             - name: FABRIC_CA_SERVER_CA_NAME
-              value: ca.org1.example.com
+              value: ca-org1-example-com
+            - name: GODEBUG
+              value: 'netdns=go'
           image: hyperledger/fabric-ca:1.4.0
           name: ca-org1-example-com
           ports:
@@ -49,14 +42,12 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/hyperledger/fabric-ca-server-config
-              name: ca-org1-example-com-claim0
+              name: peer-ca
       restartPolicy: Always
       volumes:
-        - name: ca-org1-example-com-claim0
+        - name: peer-ca
           hostPath:
-            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1.example.com/ca
-          # persistentVolumeClaim:
-          #   claimName: ca-org1-example-com-claim0
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1/ca
 status: {}
 ---
 apiVersion: v1
@@ -69,6 +60,7 @@ metadata:
   labels:
     io.kompose.service: ca-org1-example-com
   name: ca-org1-example-com
+  namespace: org1
 spec:
   ports:
     - name: '7054'

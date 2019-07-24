@@ -8,6 +8,7 @@ metadata:
   labels:
     io.kompose.service: orderer-example-com
   name: orderer-example-com
+  namespace: orderer-org
 spec:
   replicas: 1
   strategy:
@@ -18,16 +19,16 @@ spec:
       labels:
         io.kompose.service: orderer-example-com
     spec:
-      hostAliases:
-        - ip: '127.0.0.1'
-          hostnames:
-            - 'orderer.example.com'
-        - ip: '172.17.0.7'
-          hostnames:
-            - 'ca.org1.example.com'
-        - ip: '172.17.0.4'
-          hostnames:
-            - 'couchdb'
+      # hostAliases:
+      #   - ip: '127.0.0.1'
+      #     hostnames:
+      #       - 'orderer.example.com'
+      #   - ip: '172.17.0.7'
+      #     hostnames:
+      #       - 'ca.org1.example.com'
+      #   - ip: '172.17.0.4'
+      #     hostnames:
+      #       - 'couchdb'
       containers:
         - args:
             - orderer
@@ -44,6 +45,8 @@ spec:
               value: OrdererMSP
             - name: ORDERER_GENERAL_LOGLEVEL
               value: debug
+            - name: GODEBUG
+              value: 'netdns=go'
           image: hyperledger/fabric-orderer:1.4.0
           name: orderer-example-com
           ports:
@@ -51,18 +54,18 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/hyperledger/configtx
-              name: orderer-example-com-claim0
+              name: composer-file
             - mountPath: /etc/hyperledger/msp/orderer/msp
-              name: orderer-example-com-claim1
+              name: msp-files
           workingDir: /opt/gopath/src/github.com/hyperledger/fabric
       restartPolicy: Always
       volumes:
-        - name: orderer-example-com-claim0
+        - name: composer-file
           hostPath:
             path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer
-        - name: orderer-example-com-claim1
+        - name: msp-files
           hostPath:
-            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/ordererOrganizations/orderer-org/orderers/orderer.orderer-org/msp
 status: {}
 ---
 apiVersion: v1
@@ -74,7 +77,8 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: orderer-example-com
-  name: orderer-example-com
+  name: orderer
+  namespace: orderer-org
 spec:
   ports:
     - name: '7050'

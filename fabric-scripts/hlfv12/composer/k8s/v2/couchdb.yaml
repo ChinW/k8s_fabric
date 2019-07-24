@@ -8,6 +8,7 @@ metadata:
   labels:
     io.kompose.service: couchdb
   name: couchdb
+  namespace: org1
 spec:
   replicas: 1
   strategy: {}
@@ -39,6 +40,7 @@ metadata:
   labels:
     io.kompose.service: couchdb
   name: couchdb
+  namespace: org1
 spec:
   type: NodePort
   ports:
