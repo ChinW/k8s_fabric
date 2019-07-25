@@ -1,10 +1,6 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose -f docker-compose.yml convert
-    kompose.version: 1.18.0 ()
-  creationTimestamp: null
   labels:
     io.kompose.service: orderer-example-com
   name: orderer-example-com
@@ -15,20 +11,9 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         io.kompose.service: orderer-example-com
     spec:
-      # hostAliases:
-      #   - ip: '127.0.0.1'
-      #     hostnames:
-      #       - 'orderer.example.com'
-      #   - ip: '172.17.0.7'
-      #     hostnames:
-      #       - 'ca.org1.example.com'
-      #   - ip: '172.17.0.4'
-      #     hostnames:
-      #       - 'couchdb'
       containers:
         - args:
             - orderer

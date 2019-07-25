@@ -1,10 +1,6 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose -f docker-compose.yml convert
-    kompose.version: 1.18.0 ()
-  creationTimestamp: null
   labels:
     io.kompose.service: peer0-org1-example-com
   name: peer0-org1-example-com
@@ -27,7 +23,9 @@ spec:
             - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
               value: couchdb:5984
             - name: CORE_VM_ENDPOINT
-              value: 'unix:///host/var/run/docker.sock'
+              value: tcp://172.17.0.1:2376
+            # - name: CORE_VM_ENDPOINT
+            #   value: 'unix:///host/var/run/docker.sock'
             - name: FABRIC_LOGGING_SPEC
               value: 'DEBUG'
             - name: CORE_PEER_TLS_ENABLED
@@ -70,11 +68,15 @@ spec:
             - containerPort: 7051
             - containerPort: 7052
             - containerPort: 7053
-          command: ['peer']
-          args: ['node', 'start']
+          command: ['bash', '-c']
+          args: [
+              '
+              peer node start --peer-chaincodedev=true
+              ',
+            ]
           volumeMounts:
-            - mountPath: /host/var/run/
-              name: run-path
+            # - mountPath: /host/var/run/
+            #   name: run-path
             - mountPath: /etc/hyperledger/configtx
               name: configtx-path
             - mountPath: /etc/hyperledger/peer/msp
@@ -83,9 +85,9 @@ spec:
               name: peer-user-path
           workingDir: /opt/gopath/src/github.com/hyperledger/fabric
       volumes:
-        - name: run-path
-          hostPath:
-            path: /var/run/
+        # - name: run-path
+        #   hostPath:
+        #     path: /var/run/
         - name: configtx-path
           hostPath:
             path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer
@@ -99,10 +101,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.cmd: kompose -f docker-compose.yml convert
-    kompose.version: 1.18.0 ()
-  creationTimestamp: null
   labels:
     io.kompose.service: peer0-org1-example-com
   name: peer0

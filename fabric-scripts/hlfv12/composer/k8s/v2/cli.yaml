@@ -43,19 +43,26 @@ spec:
               value: netdns=go
           workingDir: /opt/gopath/src/github.com/chaincode
           command: ['/bin/bash', '-c']
-          args:
-            [
-              'cp -r chaincode_example02/ $GOPATH/src; apt-get update && apt-get install -y iputils-ping; sleep 48h;',
+          args: [
+              'cp -r chaincode_example02/ $GOPATH/src;
+              apt-get update && apt-get install -y iputils-ping;
+              sleep 48h;',
             ]
           volumeMounts:
+            # bash ./k8s/v2/install.sh
             - name: chaincode
               mountPath: /opt/gopath/src/github.com/chaincode
-            - name: host
-              mountPath: /host/var/run/
+            - name: fabric
+              mountPath: /opt/gopath/src/github.com/hyperledger/fabric
+            # - name: host
+            #   mountPath: /host/var/run/
       volumes:
         - name: chaincode
           hostPath:
             path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer
-        - name: host
+        - name: fabric
           hostPath:
-            path: /var/run/
+            path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/fabric-release-1.4
+        # - name: host
+        #   hostPath:
+        #     path: /var/run/
