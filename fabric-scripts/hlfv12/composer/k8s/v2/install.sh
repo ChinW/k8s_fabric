@@ -17,10 +17,16 @@ peer channel join -b ${CHANNEL_NAME}_newest.block
 export CHAINCODE_NAME="mycc"
 export CHAINCODE_VERSION="2.0"
 
+# dev: run chaincode in peer
+CORE_CHAINCODE_LOGLEVEL=debug CORE_PEER_ADDRESS=127.0.0.1:7052 CORE_CHAINCODE_ID_NAME=${CHAINCODE_NAME}:${CHAINCODE_VERSION} ./example02
+
+# install 
 peer chaincode install -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION} -p chaincode_example02/
 
+# for non-dev mode
 peer chaincode instantiate -o ${ORDERER} -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION} -P "AND('Org1MSP.member')" -c '{"Args":["init","a","400","b","300"]}'
 
+# for dev mode test
 peer chaincode instantiate -n mycc -v 0 -c '{"Args":["init","a","100","b","200"]}' -o ${ORDERER} -C ${CHANNEL_NAME} 
 
 peer chaincode invoke -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{"Args":["invoke","a","b","50"]}'
