@@ -15,6 +15,40 @@ class Chaincode {
     }
   }
 
+  async putWallet(stub, data, tx) {
+    data.triggerMan = tx;
+    data.recordType = 'W';
+    return await stub.putState(data.id, Buffer.from(JSON.stringify(data)));
+  }
+
+  async updateBook(stub, position, delta, tx) {
+    let newBook = null;
+    try {
+      const bookname = position.pty;
+      const bookBytes = await stub.getState(bookname);
+      if (!bookBytes || bookBytes.toString().length <= 0) {
+        newBook = {
+          id: bookname,
+          recordType: 'B',
+          positions: [position.id],
+          value: delta,
+          updatedAt: new Date(),
+          triggerMan: tx,
+        };
+      } else {
+        newBook = JSON.parse(bookBytes.toString());
+        newBook.value += delta;
+        newBook.updatedAt = new Date();
+        newBook.triggerMan = tx;
+      }
+      await stub.putState(newBook.id, Buffer.from(JSON.stringify(newBook)));
+      return 0;
+    } catch (e) {
+      console.log('error in updateBook', e);
+      return 1;
+    }
+  }
+
   async getWallet(stub, options) {
     const {pty, cpty, name, type} = options;
     const walletId =
@@ -34,9 +68,10 @@ class Chaincode {
           name,
           type,
           value: 0,
-          // updatedAt: new Date(),
+          updatedAt: new Date(),
         });
-        await stub.putState(walletId, Buffer.from(JSON.stringify(newWallet)));
+        await this.putWallet(stub, newWallet);
+
         const tmp = await stub.getState(walletId);
         console.log('tmp value ', tmp, tmp.toString());
         walletBytes = Buffer.from(JSON.stringify(newWallet));
@@ -58,54 +93,136 @@ class Chaincode {
         obj.id,
         Buffer.from(JSON.stringify(Object.assign({}, POS, obj)))
       );
+      return 0;
     } catch (e) {
       console.error('error in createNew', e);
+      return 1;
     }
   }
 
-  async newTransaction(stub, args) {
-    const {pty, cpty, name, type, delta, updatedAt} = JSON.parse(args);
-    let ptyWallet = await this.getWallet(stub, {
-      pty: pty,
-      cpty,
-      name,
-      type,
-    });
-    let cptyWallet = await this.getWallet(stub, {
-      pty: cpty,
-      cpty: pty,
-      name,
-      type,
-    });
+  async getHistory(stub, key, isHistory = true) {
+    console.info('- start getHistory: %s\n', key);
+
+    let resultsIterator = await stub.getHistoryForKey(key);
+    let results = await this.getAllResults(resultsIterator, isHistory);
+
+    return results;
+  }
+
+  async newTransaction(stub, txStr) {
+    const tx = JSON.parse(txStr);
+    tx.txId = stub.getTxID();
+    const {pty, cpty, name, type, delta, updatedAt} = tx;
+    let ptyWallet = await this.getWallet(
+      stub,
+      {
+        pty: pty,
+        cpty,
+        name,
+        type,
+      },
+      tx
+    );
+    let cptyWallet = await this.getWallet(
+      stub,
+      {
+        pty: cpty,
+        cpty: pty,
+        name,
+        type,
+      },
+      tx
+    );
 
     try {
-      await stub.putState(
-        ptyWallet.id,
-        Buffer.from(
-          JSON.stringify(
-            Object.assign({}, ptyWallet, {
-              value: ptyWallet.value - delta,
-              updatedAt,
-            })
-          )
-        )
+      await this.putWallet(
+        stub,
+        Object.assign({}, ptyWallet, {
+          value: ptyWallet.value - delta,
+          updatedAt,
+        }),
+        tx
       );
-      await stub.putState(
-        cptyWallet.id,
-        Buffer.from(
-          JSON.stringify(
-            Object.assign({}, cptyWallet, {
-              value: cptyWallet.value + delta,
-              updatedAt,
-            })
-          )
-        )
+      await this.updateBook(stub, ptyWallet, -delta, tx);
+      await this.putWallet(
+        stub,
+        Object.assign({}, cptyWallet, {
+          value: cptyWallet.value + delta,
+          updatedAt,
+        }),
+        tx
       );
+      await this.updateBook(stub, cptyWallet, delta, tx);
       return 0;
     } catch (e) {
       console.error('updating error', e);
       return 1;
     }
+  }
+
+  async getAllResults(iterator, isHistory) {
+    let allResults = [];
+    while (true) {
+      let res = await iterator.next();
+
+      if (res.value && res.value.value.toString()) {
+        let jsonRes = {};
+        console.log(res.value.value.toString('utf8'));
+
+        if (isHistory && isHistory === true) {
+          jsonRes.TxId = res.value.tx_id;
+          jsonRes.Timestamp = res.value.timestamp;
+          jsonRes.IsDelete = res.value.is_delete.toString();
+          try {
+            jsonRes.Value = JSON.parse(res.value.value.toString('utf8'));
+          } catch (err) {
+            console.log(err);
+            jsonRes.Value = res.value.value.toString('utf8');
+          }
+        } else {
+          jsonRes.Key = res.value.key;
+          try {
+            jsonRes.Record = JSON.parse(res.value.value.toString('utf8'));
+          } catch (err) {
+            console.log(err);
+            jsonRes.Record = res.value.value.toString('utf8');
+          }
+        }
+        allResults.push(jsonRes);
+      }
+      if (res.done) {
+        console.log('end of data');
+        await iterator.close();
+        console.info(allResults);
+        return allResults;
+      }
+    }
+  }
+
+  async stateQuery(stub, queryString, byDate = '', isHistory = true) {
+    console.info(
+      '- stateQuery queryString:\n' + queryString + 'limit date ' + byDate
+    );
+    let resultsIterator = await stub.getQueryResult(queryString);
+    let results = await this.getAllResults(resultsIterator, isHistory);
+    if (byDate.length && results.length) {
+      const limitDate = new Date(byDate);
+      const keys = results.map(i => i.Key);
+      const historySetReqs = keys.map(key => this.getHistory(stub, key, true));
+      const historySet = await Promise.all(historySetReqs);
+      const dateResults = [];
+      historySet.map(historicalItems => {
+        for (let i = historicalItems.length - 1; i >= 0; i--) {
+          const thisDate = new Date(historialItems[i].Timestamp.seconds * 1000);
+          if (thisDate <= limitDate) {
+            dateResults.push(historialItems[i]);
+            break;
+          }
+        }
+      });
+      return dateResults;
+    }
+    return results;
   }
 
   /**
@@ -121,8 +238,8 @@ class Chaincode {
     console.info('ret', ret);
     if (typeof this[ret.fcn] === 'function') {
       try {
-        await this[ret.fcn](stub, ...ret.params);
-        return shim.success();
+        const result = await this[ret.fcn](stub, ...ret.params);
+        return shim.success(Buffer.from(JSON.stringify(result)));
       } catch (e) {
         console.error('error in invoking', e);
         return shim.error();

@@ -65,7 +65,7 @@ module.exports.query = async (fcn, ...args) => {
 module.exports.invokeChain = async (fcn, ...args) => {
   try {
     const {user: user_from_store, fabric_client} = await getUserAndCA('user1');
-    console.log('user_from_store', user_from_store);
+    // console.log('user_from_store', user_from_store);
     if (user_from_store && user_from_store.isEnrolled()) {
       console.log('Successfully loaded user1 from persistence');
     } else {
@@ -237,10 +237,11 @@ module.exports.invokeChain = async (fcn, ...args) => {
       throw new Error(message);
     } else if (results[1].event_status === 'VALID') {
       console.log(
-        'Successfully committed the change to the ledger by the peer'
+        'Successfully committed the change to the ledger by the peer',
+        results
       );
       console.log('\n\n - try running "node query" to see the results');
-      return 0;
+      return proposalResponses[0].response.payload.toString();
     } else {
       const message = util.format(
         'Transaction failed to be committed to the ledger due to : %s',

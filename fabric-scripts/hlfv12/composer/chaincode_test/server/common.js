@@ -4,7 +4,7 @@ const Fabric_Client = require('fabric-client');
 const Fabric_CA_Client = require('fabric-ca-client');
 
 const CHANNEL_NAME = 'composerchannel';
-const CHAIN_CODE = 'pdtest12';
+const CHAIN_CODE = 'pdtest14';
 const MSP_ID = 'Org1MSP';
 const PEER_ADDR = 'peer0.org1';
 const CA_URL = 'http://ca-org1-example-com:7054';

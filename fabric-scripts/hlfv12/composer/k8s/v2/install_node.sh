@@ -15,13 +15,12 @@ peer channel fetch newest -o ${ORDERER} -c ${CHANNEL_NAME}
 peer channel join -b ${CHANNEL_NAME}_newest.block
 
 # install
-export CHAINCODE_NAME="pdtest12"
+export CHAINCODE_NAME="pdtest14"
 export CHAINCODE_VERSION="1.0"
+export PATH=/etc/nodejs/bin:$PATH;
 CORE_CHAINCODE_LOGLEVEL=debug CORE_CHAINCODE_ID_NAME=${CHAINCODE_NAME}:${CHAINCODE_VERSION} node index.js --peer.address 127.0.0.1:7052
 
 # dev: run chaincode in peer
-export PATH=/etc/nodejs/bin:$PATH;
-
 CORE_CHAINCODE_LOGLEVEL=debug CORE_CHAINCODE_ID_NAME=${CHAINCODE_NAME}:${CHAINCODE_VERSION} node index.js --peer.address 127.0.0.1:7052
 
 # install: node
@@ -41,4 +40,9 @@ peer chaincode invoke -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{"Args":["invo
 peer chaincode invoke -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{"Args":["newTransaction","{\"pty\":\"BOOK 1\",\"cpty\":\"BOOK 2\",\"name\":\"700 HK\",\"type\":\"P\",\"delta\":230,\"updatedAt\":\"2019-07-29T09:44:41.246Z\"}"]}'
 
 peer chaincode query -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{"Args":["query","a"]}'
+
+
+# custom query
+
+peer chaincode invoke -C ${CHANNEL_NAME} -n ${CHAINCODE_NAME} -c '{"Args":["stateQuery","{\"selector\":{\"pty\":\"BOOK 1\"}}"]}'
 

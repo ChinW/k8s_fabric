@@ -1,6 +1,6 @@
 VERSION=0.0.17
 
-composer archive create -t dir -n .
+# composer archive create -t dir -n .
 
 composer network install --card PeerAdmin@hlfv1 --archiveFile tutorial-network@${VERSION}.bna -o npmrcFile=/Users/bangqchi/Programming/cnpm/.cnpmrc
 

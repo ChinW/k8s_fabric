@@ -30,7 +30,16 @@ app.post('/invoke', async (req, res) => {
   console.log('req', req.body);
   const payload = req.body;
   const result = await invokeChain(payload.fcn, JSON.stringify(payload.data));
-  res.send(`result: ${result}`);
+  res.setHeader('Content-Type', 'application/json');
+  res.send(result || 0);
+});
+
+app.post('/invokeArgs', async (req, res) => {
+  console.log('req', req.body);
+  const payload = req.body;
+  const result = await invokeChain(payload.fcn, ...payload.args);
+  res.setHeader('Content-Type', 'application/json');
+  res.send(result || 0);
 });
 
 app.listen(8889, async () => {
