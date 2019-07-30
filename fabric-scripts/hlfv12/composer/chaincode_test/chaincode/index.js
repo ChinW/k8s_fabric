@@ -58,7 +58,6 @@ class Chaincode {
     console.log('search wallet id', walletId);
     try {
       let walletBytes = await stub.getState(walletId);
-      console.log('walletBytes', walletBytes);
       if (!walletBytes || walletBytes.toString().length <= 0) {
         console.log('creating wallet', walletId);
         let newWallet = Object.assign({}, POS, {
@@ -76,9 +75,7 @@ class Chaincode {
         console.log('tmp value ', tmp, tmp.toString());
         walletBytes = Buffer.from(JSON.stringify(newWallet));
       }
-      console.log('comes here', walletBytes, walletBytes.toString());
       const wallet = JSON.parse(walletBytes.toString());
-      console.log('get wallet', wallet);
       return wallet;
     } catch (e) {
       console.error('error in get wallet', e);
@@ -164,15 +161,17 @@ class Chaincode {
     let allResults = [];
     while (true) {
       let res = await iterator.next();
-
       if (res.value && res.value.value.toString()) {
+        console.log('res', res);
         let jsonRes = {};
         console.log(res.value.value.toString('utf8'));
 
         if (isHistory && isHistory === true) {
           jsonRes.TxId = res.value.tx_id;
           jsonRes.Timestamp = res.value.timestamp;
-          jsonRes.IsDelete = res.value.is_delete.toString();
+          jsonRes.IsDelete = res.value.is_delete
+            ? res.value.is_delete.toString()
+            : 0;
           try {
             jsonRes.Value = JSON.parse(res.value.value.toString('utf8'));
           } catch (err) {
@@ -199,28 +198,46 @@ class Chaincode {
     }
   }
 
-  async stateQuery(stub, queryString, byDate = '', isHistory = true) {
+  // historyType: null/latest/all
+  async stateQuery(
+    stub,
+    queryString,
+    historyType = 'none',
+    byDate = '', // needed for latestByDate/allByDate
+    isHistory = '1'
+  ) {
     console.info(
-      '- stateQuery queryString:\n' + queryString + 'limit date ' + byDate
+      'StateQuery queryString:\n' + queryString + 'limit date ' + byDate
     );
     let resultsIterator = await stub.getQueryResult(queryString);
-    let results = await this.getAllResults(resultsIterator, isHistory);
-    if (byDate.length && results.length) {
-      const limitDate = new Date(byDate);
-      const keys = results.map(i => i.Key);
+    let results = await this.getAllResults(
+      resultsIterator,
+      !!parseInt(isHistory)
+    );
+    if (historyType !== 'none' && results.length) {
+      const keys = results.map(i => i.Value.id);
       const historySetReqs = keys.map(key => this.getHistory(stub, key, true));
       const historySet = await Promise.all(historySetReqs);
-      const dateResults = [];
+      let dataResults = [];
       historySet.map(historicalItems => {
-        for (let i = historicalItems.length - 1; i >= 0; i--) {
-          const thisDate = new Date(historialItems[i].Timestamp.seconds * 1000);
-          if (thisDate <= limitDate) {
-            dateResults.push(historialItems[i]);
-            break;
+        console.log('historicalItems', historicalItems.length);
+        if (['latestByDate', 'allByDate'].includes(historyType)) {
+          const limitDate = new Date(byDate);
+          for (let i = 0; i < historicalItems.length; i++) {
+            const thisDate = new Date(historicalItems[i].Value.updatedAt);
+            console.log('thisDate', thisDate, limitDate, thisDate <= limitDate);
+            if (i === historicalItems.length - 1 || thisDate <= limitDate) {
+              dataResults.push(historicalItems[i]);
+              if (historyType === 'latestByDate') {
+                break;
+              }
+            }
           }
+        } else if (historyType === 'all') {
+          dataResults = dataResults.concat(historicalItems);
         }
       });
-      return dateResults;
+      return dataResults;
     }
     return results;
   }
