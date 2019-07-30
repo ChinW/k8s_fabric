@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app: cli
   name: cli
   namespace: org1
 spec:
@@ -44,7 +46,7 @@ spec:
           workingDir: /opt/gopath/src/github.com/chaincode
           command: ['/bin/bash', '-c']
           args: [
-              'cp -r chaincode_example02/ $GOPATH/src;
+              'cp -r chaincode_test/ $GOPATH/src;
               apt-get update && apt-get install -y iputils-ping;
               sleep 48h;',
             ]
@@ -66,3 +68,20 @@ spec:
         # - name: host
         #   hostPath:
         #     path: /var/run/
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: node-server
+  name: node-server
+  namespace: org1
+spec:
+  type: NodePort
+  ports:
+    - name: 'node-server'
+      port: 8889
+      targetPort: 8889
+      nodePort: 30001
+  selector:
+    app: cli

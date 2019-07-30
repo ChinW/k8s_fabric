@@ -71,7 +71,10 @@ spec:
           command: ['bash', '-c']
           args: [
               '
-              peer node start --peer-chaincodedev=true
+              export PATH=/etc/nodejs/bin:$PATH;
+              node -v;
+              npm -v;
+              peer node start --peer-chaincodedev=true;
               ',
             ]
           volumeMounts:
@@ -83,7 +86,10 @@ spec:
               name: peer-msp
             - mountPath: /etc/hyperledger/msp/users
               name: peer-user-path
-          workingDir: /opt/gopath/src/github.com/hyperledger/fabric
+            - mountPath: /etc/nodejs
+              name: nodejs
+          workingDir: /etc/hyperledger/configtx
+          #/opt/gopath/src/github.com/hyperledger/fabric
       volumes:
         # - name: run-path
         #   hostPath:
@@ -97,6 +103,9 @@ spec:
         - name: peer-user-path
           hostPath:
             path: /Users/bangqchi/Programming/Blockchain/fabric-dev-servers/fabric-scripts/hlfv12/composer/crypto-config/peerOrganizations/org1/users
+        - name: nodejs
+          hostPath:
+            path: /Users/bangqchi/Programming/nodejs/node-v8.16.0-linux-x64
 ---
 apiVersion: v1
 kind: Service

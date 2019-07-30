@@ -1,3 +1,4 @@
 **/node_modules/**
 .vscode
 **/fabric-release-1.4/**
+**/hfc-key-store/**
