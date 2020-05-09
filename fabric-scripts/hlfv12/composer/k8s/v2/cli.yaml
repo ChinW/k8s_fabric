@@ -43,19 +43,27 @@ spec:
               value: '/opt/gopath/src/github.com/chaincode/crypto-config/peerOrganizations/org1/users/Admin@org1/msp'
             - name: GODEBUG
               value: netdns=go
-          workingDir: /opt/gopath/src/github.com/chaincode
+            - name: npm_config_prefix
+              value: /root/npm
+            - name: npm_config_tmp
+              value: /root/npm/tmp
+          workingDir: /root/test
           command: ['/bin/bash', '-c']
           args: [
-              'cp -r chaincode_test/ $GOPATH/src;
-              apt-get update && apt-get install -y iputils-ping;
+              '
+              mkdir -p /root/npm;
+              cd /root/test/chaincode_test;
+              npm install --unsafe-perm;
               sleep 48h;',
             ]
           volumeMounts:
             # bash ./k8s/v2/install.sh
-            - name: chaincode
-              mountPath: /opt/gopath/src/github.com/chaincode
+            # - name: chaincode
+            #   mountPath: /opt/gopath/src/github.com/chaincode
             - name: fabric
               mountPath: /opt/gopath/src/github.com/hyperledger/fabric
+            - name: chaincode
+              mountPath: /root/test
             # - name: host
             #   mountPath: /host/var/run/
       volumes:
